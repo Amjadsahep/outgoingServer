@@ -7,6 +7,10 @@ router.post("/", async (req, res) => {
   try {
     const doc = new Doc102(req.body);
     await doc.save();
+    req.io.emit("doc102:created", {
+      message: "New doc created",
+      doc:doc
+    });
     res.json(doc);
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -29,6 +33,10 @@ router.get("/:id", async (req, res) => {
 router.put("/:id", async (req, res) => {
   try {
     const doc = await Doc102.findByIdAndUpdate(req.params.id, req.body, { new: true });
+     req.io.emit("doc102:updated", {
+      message: "doc102 updated",
+      doc:doc
+    });
     res.json(doc);
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -40,6 +48,10 @@ router.put("/:id", async (req, res) => {
 router.delete("/clear",async (req,res)=>{
   try{
 await Doc102.deleteMany({});
+
+ req.io.emit("doc102:cleared", {
+      message: "doc102 cleared",
+    });
 
 res.json({
   message:"All doc102 deleted"
@@ -54,7 +66,11 @@ res.status(400).json({error:e.message});
 // Delete
 router.delete("/:id", async (req, res) => {
   try {
-    await Doc102.findByIdAndDelete(req.params.id);
+   const doc = await Doc102.findByIdAndDelete(req.params.id);
+    req.io.emit("doc102:deleted", {
+      message: "New doc deleted",
+      doc
+    });
     res.json({ message: "Doc102 deleted" });
   } catch (err) {
     res.status(400).json({ error: err.message });
