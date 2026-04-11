@@ -7,6 +7,10 @@ router.post("/", async (req, res) => {
   try {
     const reqItem = new Req101(req.body);
     await reqItem.save();
+    req.io.emit("req101:created", {
+      message: "New req created",
+      reqItem: reqItem
+    });
     res.json(reqItem);
   } catch (err) {
     console.log(err)
@@ -30,6 +34,10 @@ router.get("/:id", async (req, res) => {
 router.put("/:id", async (req, res) => {
   try {
     const reqItem = await Req101.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    req.io.emit("req101:updated", {
+      message: " req updated",
+      reqItem: reqItem
+    });
     res.json(reqItem);
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -40,23 +48,31 @@ router.put("/:id", async (req, res) => {
 //Delete all
 
 
-router.delete("/clear",async (req,res)=>{
-  try{
-await Req101.deleteMany({});
+router.delete("/clear", async (req, res) => {
+  try {
+    await Req101.deleteMany({});
 
-res.json({
-  message:"All req101 deleted"
-});
+    req.io.emit("req101:cleared", {
+      message: " req cleard"
+    });
 
-  }catch(e){
-res.status(400).json({error:e.message});
+    res.json({
+      message: "All req101 deleted"
+    });
+
+  } catch (e) {
+    res.status(400).json({ error: e.message });
   }
 })
 
 // Delete one
 router.delete("/:id", async (req, res) => {
   try {
-    await Req101.findByIdAndDelete(req.params.id);
+    const reqItem = await Req101.findByIdAndDelete(req.params.id);
+    req.io.emit("req101:deleted", {
+      message: " req deleted",
+      reqItem: reqItem
+    });
     res.json({ message: "Req101 deleted" });
   } catch (err) {
     res.status(400).json({ error: err.message });

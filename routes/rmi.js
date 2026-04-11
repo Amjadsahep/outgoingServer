@@ -7,6 +7,11 @@ router.post("/", async (req, res) => {
   try {
     const rmi = new Rmi(req.body);
     await rmi.save();
+
+    req.io.emit("rmi:created", {
+      message: "New rmi created",
+      rmi:rmi
+    });
     res.json(rmi);
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -29,6 +34,10 @@ router.get("/:id", async (req, res) => {
 router.put("/:id", async (req, res) => {
   try {
     const rmi = await Rmi.findByIdAndUpdate(req.params.id, req.body, { new: true });
+     req.io.emit("rmi:updated", {
+      message: "rmi updated",
+      rmi:rmi
+    });
     res.json(rmi);
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -40,6 +49,10 @@ router.put("/:id", async (req, res) => {
 router.delete("/clear",async (req,res)=>{
   try{
 await Rmi.deleteMany({});
+
+req.io.emit("rmi:cleared", {
+      message: "rmi cleared",
+    });
 
 res.json({
   message:"All rmi deleted"
@@ -53,7 +66,12 @@ res.status(400).json({error:e.message});
 // Delete
 router.delete("/:id", async (req, res) => {
   try {
-    await Rmi.findByIdAndDelete(req.params.id);
+ const rmi =   await Rmi.findByIdAndDelete(req.params.id);
+
+     req.io.emit("rmi:deleted", {
+      message: "rmi deleted",
+      rmi
+    });
     res.json({ message: "Rmi deleted" });
   } catch (err) {
     res.status(400).json({ error: err.message });
