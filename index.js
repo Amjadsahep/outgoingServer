@@ -16,6 +16,26 @@ const MONGO_URI = process.env.MONGO_URI;
 app.use(cors());
 app.use(express.json());
 
+// HTTP server (IMPORTANT)
+const server = http.createServer(app);
+
+
+// socket io
+
+const io = new Server(server, {
+  cors: {
+    origin: "*",
+    methods: ["GET", "POST"],
+    credentials: true
+  }
+});
+
+app.use((req, res, next) => {
+  req.io = io;
+  next();
+});
+
+
 // root 
 
 app.get('/', (req, res) => {
@@ -30,24 +50,10 @@ app.use("/api/req101", require("./routes/req101"));
 app.use("/api/rmi", require("./routes/rmi"));
 app.use("/api/consumption", require("./routes/consumption"));
 
-// connect db
 
-mongoose
-  .connect(MONGO_URI)
-  .then(() => console.log("MongoDB Connected"))
-  .catch((err) => console.log(err));
 
-// HTTP server (IMPORTANT)
-const server = http.createServer(app);
 
-// socket io
-
-const io = new Server(server, {
-  cors: {
-    origin: "*",
-    methods: ["GET", "POST"]
-  }
-});
+// socket events
 
 io.on("connection", (socket) => {
   console.log("User connected:", socket.id);
@@ -66,11 +72,14 @@ io.on("connection", (socket) => {
   });
 });
 
+// connect db
 
-app.use((req, res, next) => {
-  req.io = io;
-  next();
-});
+mongoose
+  .connect(MONGO_URI)
+  .then(() => console.log("MongoDB Connected"))
+  .catch((err) => console.log(err));
+
+
 
 // server running
 
