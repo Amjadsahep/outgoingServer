@@ -1,6 +1,62 @@
 const express = require("express");
 const router = express.Router();
 const User = require("../models/User");
+const jwt = require("jsonwebtoken") // import library
+
+
+//========= login ============================
+
+router.post("/login", async (req, res) => {
+  const { username, password } = req.body;
+
+  try {
+    const user = await User.findOne({ username });
+    // check does user exist !
+    if (!user) {
+      return res.status(400).json({ message: " username not found" });
+    }
+
+    // check password !
+
+    if (user.password !== password) {
+      return res.status(400).json({ message: " wrong password" });
+    }
+
+    // create token
+
+    const token = jwt.sign(
+      {
+        id: user._id,
+        username: user.username
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: "1d" }
+
+    );
+
+    req.io.emit("user:login", {
+      message: "User logged in",
+      user: user.username,
+      id: user._id
+    });
+
+
+    // res.jsown will return token and user !!
+    res.json({
+      message: "تم تسجيل الدخول بنجاح",
+      token,// this is the token
+      user: {
+        user:user
+      },
+    });
+
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
+
 
 // Create user
 router.post("/", async (req, res) => {
@@ -68,31 +124,6 @@ router.delete("/:id", async (req, res) => {
   }
 });
 
-router.post("/login", async (req, res) => {
-  const { username, password } = req.body;
 
-  try {
-    const user = await User.findOne({ username, password });
-
-    if (!user) {
-      return res.status(400).json({ message: "بيانات غير صحيحة" });
-    }
-
-
-    req.io.emit("user:login", {
-      message: "User logged in",
-      user: user.username,
-      id: user._id
-    });
-
-    res.json({
-      message: "تم تسجيل الدخول بنجاح",
-      user: user
-    });
-
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
 
 module.exports = router;
