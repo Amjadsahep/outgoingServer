@@ -2,6 +2,10 @@ const express = require("express");
 const router = express.Router();
 const User = require("../models/User");
 const jwt = require("jsonwebtoken") // import library
+const auth = require("../middleware/auth") //use this method with routes
+const bcrypt = require("bcrypt")
+
+
 
 
 //========= login ============================
@@ -16,9 +20,10 @@ router.post("/login", async (req, res) => {
       return res.status(400).json({ message: " username not found" });
     }
 
-    // check password !
+    // check password by bcrypt !
+    const isMatch = await bcrypt.compare(password, user.password);
 
-    if (user.password !== password) {
+    if (!isMatch) {
       return res.status(400).json({ message: " wrong password" });
     }
 
@@ -46,8 +51,9 @@ router.post("/login", async (req, res) => {
       message: "تم تسجيل الدخول بنجاح",
       token,// this is the token
       user: {
-        user:user
-      },
+        id: user._id,
+        username: user.username
+      }
     });
 
   } catch (err) {
@@ -61,7 +67,14 @@ router.post("/login", async (req, res) => {
 // Create user
 router.post("/", async (req, res) => {
   try {
-    const user = new User(req.body);
+
+    const body = req.body;
+
+    // now encrypt password if exist 
+    if (body.password) {
+      body.password = await bcrypt.hash(body.password, 10);
+    }
+    const user = new User(body);
     await user.save();
     req.io.emit("user:created", {
       message: "New user created",
@@ -75,7 +88,7 @@ router.post("/", async (req, res) => {
 });
 
 // Read all users
-router.get("/", async (req, res) => {
+router.get("/", auth, async (req, res) => {
   try {
     const users = await User.find();
     res.json(users);
@@ -85,17 +98,25 @@ router.get("/", async (req, res) => {
 });
 
 // Read single user
-router.get("/:id", async (req, res) => {
+router.get("/:id", auth, async (req, res) => {
   const user = await User.findById(req.params.id);
+
+  if (!user) {
+    return res.status(404).json({ message: "User not found" });
+  }
   res.json(user);
 });
 
 // Update user
-router.put("/:id", async (req, res) => {
+router.put("/:id", auth, async (req, res) => {
   try {
     const user = await User.findByIdAndUpdate(req.params.id, req.body, {
       returnDocument: 'after'
     });
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
 
     req.io.emit("user:updated", {
       message: "User updated",
@@ -109,9 +130,13 @@ router.put("/:id", async (req, res) => {
 });
 
 // Delete user
-router.delete("/:id", async (req, res) => {
+router.delete("/:id", auth, async (req, res) => {
   try {
     const user = await User.findByIdAndDelete(req.params.id);
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
 
     req.io.emit("user:deleted", {
       message: "User deleted",
