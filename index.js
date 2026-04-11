@@ -1,11 +1,14 @@
 const express = require("express");
+const http = require("http");
 const mongoose = require("mongoose");
 const cors = require("cors");
+const { Server } = require("socket.io");
 require("dotenv").config();
+
 
 const app = express();
 
-const PORT = Number(process.env.PORT);
+const PORT = Number(process.env.PORT || 3000);
 const MONGO_URI = process.env.MONGO_URI;
 
 // middleware
@@ -15,7 +18,7 @@ app.use(express.json());
 
 // root 
 
-app.get('/',(req,res)=>{
+app.get('/', (req, res) => {
   res.send('server is working on PORT 3000')
 })
 
@@ -34,9 +37,44 @@ mongoose
   .then(() => console.log("MongoDB Connected"))
   .catch((err) => console.log(err));
 
+// HTTP server (IMPORTANT)
+const server = http.createServer(app);
+
+// socket io
+
+const io = new Server(server, {
+  cors: {
+    origin: "*",
+    methods: ["GET", "POST"]
+  }
+});
+
+io.on("connection", (socket) => {
+  console.log("User connected:", socket.id);
+
+  socket.on("message", (data) => {
+    console.log("message:", data);
+
+    socket.emit("message", {
+      from: "server",
+      text: "hello from backend"
+    });
+  });
+
+  socket.on("disconnect", () => {
+    console.log("User disconnected:", socket.id);
+  });
+});
+
+
+app.use((req, res, next) => {
+  req.io = io;
+  next();
+});
+
 // server running
 
-const server = app.listen(PORT, () => {
+server.listen(PORT, () => {
   console.log('server is running on port 3000');
 });
 
