@@ -13,6 +13,7 @@ router.post("/", async (req, res) => {
       rmi:rmi
     });
     res.json(rmi);
+    console.log("🔥 RMI POST HIT");
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
