@@ -50,7 +50,11 @@ app.use("/api/req101", require("./routes/req101"));
 app.use("/api/rmi", require("./routes/rmi"));
 app.use("/api/consumption", require("./routes/consumption"));
 
-
+// سجل الوارد — يجب أن تطابق مسارات تطبيق Flutter ([LedgerKind.incoming])
+app.use("/api/inward/doc102", require("./routes/inward_doc102"));
+app.use("/api/inward/req101", require("./routes/inward_req101"));
+app.use("/api/inward/rmi", require("./routes/inward_rmi"));
+app.use("/api/inward/consumption", require("./routes/inward_consumption"));
 
 
 // socket events
