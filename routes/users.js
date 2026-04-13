@@ -5,6 +5,8 @@ const jwt = require("jsonwebtoken") // import library
 const auth = require("../middleware/auth") //use this method with routes
 const bcrypt = require("bcrypt")
 
+const JWT_SECRET = process.env.JWT_SECRET || "outgoing-default-secret-change-in-production"
+
 
 
 
@@ -34,7 +36,7 @@ router.post("/login", async (req, res) => {
         id: user._id,
         username: user.username
       },
-      process.env.JWT_SECRET,
+      JWT_SECRET,
       { expiresIn: "1d" }
 
     );
@@ -104,14 +106,21 @@ router.get("/:id", auth, async (req, res) => {
   if (!user) {
     return res.status(404).json({ message: "User not found" });
   }
-  res.json(user);
+  const safe = user.toObject();
+  delete safe.password;
+  res.json(safe);
 });
 
 // Update user
 router.put("/:id", auth, async (req, res) => {
   try {
-    const user = await User.findByIdAndUpdate(req.params.id, req.body, {
-      returnDocument: 'after'
+    const body = { ...req.body };
+    // تشفير كلمة المرور الجديدة — لا تُخزَّن كنص صريح
+    if (body.password && typeof body.password === "string" && body.password.length > 0) {
+      body.password = await bcrypt.hash(body.password, 10);
+    }
+    const user = await User.findByIdAndUpdate(req.params.id, body, {
+      new: true,
     });
 
     if (!user) {
@@ -123,7 +132,10 @@ router.put("/:id", auth, async (req, res) => {
       user: user.username,
       id: user._id
     });
-    res.json(user);
+    // لا تُرجع hash كلمة المرور للعميل
+    const safe = user.toObject();
+    delete safe.password;
+    res.json(safe);
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
