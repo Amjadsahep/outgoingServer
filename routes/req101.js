@@ -1,6 +1,8 @@
 const express = require("express");
 const router = express.Router();
 const Req101 = require("../models/Req101");
+const auth = require("../middleware/auth");
+const requireAdmin = require("../middleware/requireAdmin");
 
 // Create
 router.post("/", async (req, res) => {
@@ -48,7 +50,7 @@ router.put("/:id", async (req, res) => {
 //Delete all
 
 
-router.delete("/clear", async (req, res) => {
+router.delete("/clear", auth, requireAdmin, async (req, res) => {
   try {
     await Req101.deleteMany({});
 

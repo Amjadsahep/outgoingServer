@@ -1,6 +1,8 @@
 const express = require("express");
 const router = express.Router();
 const Rmi = require("../models/Rmi");
+const auth = require("../middleware/auth");
+const requireAdmin = require("../middleware/requireAdmin");
 
 // Create
 router.post("/", async (req, res) => {
@@ -47,7 +49,7 @@ router.put("/:id", async (req, res) => {
 
 
 //=== clear 
-router.delete("/clear",async (req,res)=>{
+router.delete("/clear", auth, requireAdmin, async (req,res)=>{
   try{
 await Rmi.deleteMany({});
 

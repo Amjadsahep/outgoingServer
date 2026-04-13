@@ -10,12 +10,16 @@ function auth(req, res, next) {
   }
 
   const token = header.startsWith("Bearer ")
-  ? header.slice(7)
-  : header;
+    ? header.slice(7)
+    : header;
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
-    req.user = decoded;
+    req.user = {
+      id: decoded.id,
+      username: decoded.username,
+      role: decoded.role || "user",
+    };
     next();
   } catch (err) {
     return res.status(401).json({ message: "Invalid token" });
@@ -23,4 +27,3 @@ function auth(req, res, next) {
 }
 
 module.exports = auth;
-
